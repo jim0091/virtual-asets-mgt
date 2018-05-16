@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jinhui.common.dao.AccountDao" >
+  <resultMap id="BaseResultMap" type="com.jinhui.common.entity.Account" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="CHAR" />
+    <result column="user_name" property="userName" jdbcType="VARCHAR" />
+    <result column="username" property="sysUserName" jdbcType="VARCHAR" />
+    <result column="user_account" property="userAccount" jdbcType="CHAR" />
+    <result column="account_name" property="accountName" jdbcType="VARCHAR" />
+    <result column="account_type" property="accountType" jdbcType="VARCHAR" />
+    <result column="position_vol" property="positionVol" jdbcType="DECIMAL" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="status" property="status" jdbcType="VARCHAR" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    <!--
+      WARNING - @mbggenerated
+    -->
+    id, user_id, user_name, user_account, account_name, account_type, position_vol, create_time
+  </sql>
+  <select id="queryListBySelective" resultMap="BaseResultMap" >
+    select a.user_id,a.account_name,a.user_account,a.user_name,a.create_time,'成功' as status
+    from account a
+    left join user u on a.user_id = u.user_id
+    where 1 = 1
+    <if test="userName != null and userName != ''" >
+      and a.user_name like  concat('%',#{userName},'%')
+    </if>
+    <if test="userId != null and userId !=''" >
+      and a.user_id = #{userId}
+    </if>
+    <if test="sysUserId != null and sysUserId !=''" >
+      and u.sys_user_id = #{sysUserId}
+    </if>
+    order by a.user_id desc,a.create_time desc
+  </select>
+
+  <select id="queryListBySysUserId" resultMap="BaseResultMap" >
+    select s.username,a.user_name,a.user_id,a.user_account,a.position_vol from account a
+    left join user u on a.user_id = u.user_id
+    left join sys_user s on u.sys_user_id = s.user_id
+    where a.user_id in (select user_id from user where sys_user_id = #{sysUserId})
+    <if test="userName != null and userName != ''" >
+      and a.user_name like  concat('%',#{userName},'%')
+    </if>
+    <if test="sysUserName != null and sysUserName != ''" >
+      and s.username like  concat('%',#{sysUserName},'%')
+    </if>
+    <if test="userId != null and userId !=''" >
+      and a.user_id = #{userId}
+    </if>
+  </select>
+
+</mapper>

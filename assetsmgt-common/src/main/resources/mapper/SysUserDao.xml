@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jinhui.common.dao.SysUserDao">
+	<select id="queryObject" resultType="com.jinhui.common.entity.SysUserEntity">
+		select u.user_id,u.username,u.mobile,u.id_no,u.create_time,r.role_name,r.role_id,u.status
+		from sys_user u
+		left join sys_user_role ur on u.user_id = ur.user_id
+		left join sys_role r on r.role_id = ur.role_id
+		where  u.user_id = #{value}
+	</select>
+	
+	<select id="queryList" resultType="com.jinhui.common.entity.SysUserEntity">
+		select u.*, (select d.name from sys_dept d where d.dept_id = u.dept_id) deptName from sys_user u
+		<where>
+			<if test="username != null and username.trim() != ''">
+				and u.`username` like concat('%',#{username},'%')
+			</if>
+
+			<!--  数据过滤  -->
+			${filterSql}
+		</where>
+		<choose>
+			<when test="sidx != null and sidx.trim() != ''">
+				order by u.${sidx} ${order}
+			</when>
+			<otherwise>
+				order by u.user_id desc
+			</otherwise>
+		</choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+	<select id="queryTotal" resultType="int">
+		select count(*) from sys_user u
+		<where>
+			<if test="username != null and username.trim() != ''">
+				and u.`username` like concat('%',#{username},'%')
+			</if>
+
+			<!--  数据过滤  -->
+			${filterSql}
+		</where>
+	</select>
+	
+	<!-- 查询用户的所有权限 -->
+	<select id="queryAllPerms" resultType="string">
+		select m.perms from sys_user_role ur 
+			LEFT JOIN sys_role_menu rm on ur.role_id = rm.role_id 
+			LEFT JOIN sys_menu m on rm.menu_id = m.menu_id 
+		where ur.user_id = #{userId}
+	</select>
+	
+	<!-- 查询用户的所有菜单ID --> 
+	<select id="queryAllMenuId" resultType="long">
+		select distinct rm.menu_id from sys_user_role ur 
+			LEFT JOIN sys_role_menu rm on ur.role_id = rm.role_id 
+		where ur.user_id = #{userId}
+	</select>
+	
+	<select id="queryByUserName" resultType="com.jinhui.common.entity.SysUserEntity">
+		select * from sys_user where username = #{username}
+	</select>
+
+	<select id="queryByMobile" resultType="com.jinhui.common.entity.SysUserEntity">
+		select u.*,ur.role_id from sys_user u,sys_user_role ur
+        where mobile = #{mobileNo} and u.user_id = ur.user_id
+	</select>
+
+	<select id="querySearchList" resultType="com.jinhui.common.entity.SysUserEntity">
+		select u.user_id,u.username,u.mobile,u.id_no,u.create_time,r.role_name,case when u.status='0' then '禁用' when u.status='1' then '正常' end as statusValue,u.status from sys_user u
+		left join sys_user_role ur on u.user_id = ur.user_id
+		left join sys_role r on r.role_id = ur.role_id
+		where 1 = 1
+		<if test="userId != null and userId !=0" >
+			and u.user_id = #{userId}
+		</if>
+		<if test="username != null and username!=''" >
+			and u.username like  concat('%',#{username},'%')
+		</if>
+		order by create_time desc
+	</select>
+
+	<!-- 查询拥有经济人角色的后台用户-->
+	<select id="queryAgentList" resultType="com.jinhui.common.entity.SysUserEntity">
+		select u.username,u.user_id from sys_user u,sys_role r,sys_user_role ur
+		where u.user_id = ur.user_id and r.role_id = ur.role_id and r.role_id =2 and u.status = 1
+		<if test="sysUserId != null and sysUserId!=''" >
+			and u.user_id = #{sysUserId}
+		</if>
+	</select>
+
+	<select id="queryAgentListBySelective" resultType="com.jinhui.common.entity.SysUserEntity">
+		select distinct p.user_id,p.username,p.id_no,p.mobile,p.create_time,ifnull(a.count,0) as count
+			from (select u.user_id,u.username,u.id_no,u.mobile,u.create_time from sys_user u,sys_user_role ur,sys_role r where u.user_id = ur.user_id and ur.role_id = r.role_id and r.role_id = 2) p
+			left join
+			(select u.sys_user_id,u.user_id,count(u.user_id) as count,u.attorney_flag from user u where u.attorney_flag = '1' group by sys_user_id) a on p.user_id = a.sys_user_id
+		where 1 = 1
+		<if test="userName != null and userName!=''" >
+			and p.username like concat('%',#{userName},'%')
+		</if>
+		order by create_time desc
+	</select>
+	
+	<insert id="save" parameterType="com.jinhui.common.entity.SysUserEntity" useGeneratedKeys="true" keyProperty="userId">
+		insert into sys_user
+		(
+			`user_id`, 
+			`username`, 
+			`password`,
+			`salt`,
+			`id_no`,
+			`mobile`, 
+			`status`,
+			`create_time`
+		)
+		values
+		(
+			#{userId}, 
+			#{username}, 
+			#{password},
+			#{salt},
+			#{idNo},
+			#{mobile}, 
+			#{status},
+			#{createTime}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.jinhui.common.entity.SysUserEntity">
+		update sys_user 
+		<set> 
+			<if test="username != null">`username` = #{username}, </if>
+			<if test="password != null">`password` = #{password}, </if>
+			<if test="idNo != null">`id_no` = #{idNo}, </if>
+			<if test="mobile != null">`mobile` = #{mobile}, </if>
+			<if test="status != null">`status` = #{status}, </if>
+		</set>
+		where user_id = #{userId}
+	</update>
+	
+	<update id="updatePassword" parameterType="map">
+		update sys_user set `password` = #{newPassword} 
+			where user_id = #{userId} and password = #{password}
+	</update>
+	
+	<delete id="delete">
+		update sys_user set status = 0 where user_id = #{userId}
+	</delete>
+
+	<select id="querySysUserById" resultType="com.jinhui.common.entity.SysUserEntity" >
+		select * from sys_user where user_id = #{sysUserId}
+	</select>
+
+</mapper>

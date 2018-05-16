@@ -1,0 +1,24 @@
+package com.jinhui.common.dao;
+
+import com.jinhui.common.entity.SysRoleMenuEntity;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * 角色与菜单对应关系
+ * 
+ * @author chenshun
+ * @email sunlightcs@gmail.com
+ * @date 2016年9月18日 上午9:33:46
+ */
+@Mapper
+@Component
+public interface SysRoleMenuDao extends BaseDao<SysRoleMenuEntity> {
+	
+	/**
+	 * 根据角色ID，获取菜单ID列表
+	 */
+	List<Long> queryMenuIdList(Long roleId);
+}
